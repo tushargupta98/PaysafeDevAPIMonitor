@@ -13,19 +13,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @SpringBootApplication
 @RestController
-public class Application extends SpringBootServletInitializer{
+public class Application extends SpringBootServletInitializer {
 
 	public static void main(String[] args) throws Exception {
-        SpringApplication.run(Application.class, args);
-    }
-	
-    @Override
+		SpringApplication.run(Application.class, args);
+	}
+
+	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
 		return builder.sources(Application.class);
 	}
-    
-    @RequestMapping(value="/")
-    public String welcome(){
-    	return "API Monitoring APP!";
-    }
+
+	@RequestMapping(value = "/")
+	public String welcome() {
+		return "API Monitoring APP!";
+	}
 }

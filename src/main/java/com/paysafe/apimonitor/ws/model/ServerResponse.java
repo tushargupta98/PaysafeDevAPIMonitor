@@ -1,6 +1,7 @@
 package com.paysafe.apimonitor.ws.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * 
  * @author tushar

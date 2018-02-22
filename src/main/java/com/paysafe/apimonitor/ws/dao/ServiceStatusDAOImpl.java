@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.paysafe.apimonitor.ws.model.ServiceStatusVO;
 
-public class ServiceStatusDAOImpl implements ServiceStatusDAO{
+public class ServiceStatusDAOImpl implements ServiceStatusDAO {
 
 	private static Map<String, List<ServiceStatusVO>> serviceStatusMap = new HashMap<>();
 
@@ -18,15 +18,15 @@ public class ServiceStatusDAOImpl implements ServiceStatusDAO{
 
 	@Override
 	public boolean insertServiceStatus(String serviceURL, ServiceStatusVO serviceStatusVO) {
-		List<ServiceStatusVO> sStatusList =  serviceStatusMap.get(serviceURL);
-		if(sStatusList==null) {
+		List<ServiceStatusVO> sStatusList = serviceStatusMap.get(serviceURL);
+		if (sStatusList == null) {
 			sStatusList = new ArrayList<ServiceStatusVO>();
 			sStatusList.add(serviceStatusVO);
 			serviceStatusMap.put(serviceURL, sStatusList);
-		}else {
+		} else {
 			sStatusList.add(serviceStatusVO);
 		}
-		return true;	
+		return true;
 	}
 
 	@Override

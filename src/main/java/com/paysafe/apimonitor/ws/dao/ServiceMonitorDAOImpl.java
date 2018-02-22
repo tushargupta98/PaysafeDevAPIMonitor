@@ -5,9 +5,10 @@ import java.util.Map;
 
 import com.paysafe.apimonitor.ws.model.SchedulerVO;
 
-public class ServiceMonitorDAOImpl implements ServiceMonitorDAO{
+public class ServiceMonitorDAOImpl implements ServiceMonitorDAO {
 
 	private static Map<String, SchedulerVO> serviceMonitorMap = new HashMap<>();
+
 	@Override
 	public Map<String, SchedulerVO> getAllServiceMonitors() {
 		return serviceMonitorMap;
@@ -21,14 +22,14 @@ public class ServiceMonitorDAOImpl implements ServiceMonitorDAO{
 
 	@Override
 	public void cleanCache() {
-		for (Map.Entry<String, SchedulerVO> entry : serviceMonitorMap.entrySet()){
-			SchedulerVO schVO =entry.getValue();
+		for (Map.Entry<String, SchedulerVO> entry : serviceMonitorMap.entrySet()) {
+			SchedulerVO schVO = entry.getValue();
 			schVO.getSchedulerTask().markSchedulerTaskToStop();
 			schVO.getSchedulerTask().cancel();
 			schVO.getTimer().cancel();
-			schVO.getTimer().purge();		
+			schVO.getTimer().purge();
 		}
 		serviceMonitorMap = new HashMap<>();
 	}
-	
+
 }

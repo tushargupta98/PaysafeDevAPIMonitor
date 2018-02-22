@@ -18,10 +18,8 @@ import com.paysafe.business.MonitoringFactory;
 
 import org.junit.Assert;
 
+public class MonitoringBOTest extends AbstractTest {
 
-public class MonitoringBOTest extends AbstractTest{
-
-		
 	@Before
 	public void setUp() {
 		ServiceMonitorDAO smDAO = MonitoringFactory.getServiceMonitorDAO(ApplicationConstants.SERVICE_MONITOR_DAO);
@@ -29,15 +27,15 @@ public class MonitoringBOTest extends AbstractTest{
 		ServiceStatusDAO ssDAO = MonitoringFactory.getServiceStatusDAO(ApplicationConstants.SERVICE_STATUS_DAO);
 		ssDAO.cleanCache();
 	}
-	
+
 	@After
-	public void cleanUp() {		
+	public void cleanUp() {
 		ServiceMonitorDAO smDAO = MonitoringFactory.getServiceMonitorDAO(ApplicationConstants.SERVICE_MONITOR_DAO);
 		smDAO.cleanCache();
 		ServiceStatusDAO ssDAO = MonitoringFactory.getServiceStatusDAO(ApplicationConstants.SERVICE_STATUS_DAO);
 		ssDAO.cleanCache();
 	}
-	
+
 	@Test
 	public void testMonitoring() {
 		MonitoringBO mBO = new MonitoringBO();
@@ -45,18 +43,17 @@ public class MonitoringBOTest extends AbstractTest{
 		srVO.setServiceURL("Service1");
 		srVO.setInterval(2);
 		ExecutionResponseVO erVO = mBO.createServiceMonitor(srVO);
-		Assert.assertEquals("Monitoring did not start correctly",1001, erVO.getCode());
+		Assert.assertEquals("Monitoring did not start correctly", 1001, erVO.getCode());
 		try {
 			Thread.sleep(10000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		List<ServiceStatusVO> sLog = mBO.queryStatusLog(srVO.getServiceURL());
-		Assert.assertNotEquals("Service Status Not logged",0, sLog.size());
+		Assert.assertNotEquals("Service Status Not logged", 0, sLog.size());
 		erVO = mBO.stopMonitoring(srVO.getServiceURL());
-		Assert.assertEquals("Monitoring did not stop correctly",2001, erVO.getCode());
-				
+		Assert.assertEquals("Monitoring did not stop correctly", 2001, erVO.getCode());
+
 	}
-	
-	
+
 }

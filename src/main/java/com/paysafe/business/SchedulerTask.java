@@ -13,11 +13,14 @@ import com.paysafe.apimonitor.ws.dao.ApplicationMessages;
 import com.paysafe.apimonitor.ws.dao.ServiceStatusDAO;
 import com.paysafe.apimonitor.ws.model.ServerResponse;
 import com.paysafe.apimonitor.ws.model.ServiceStatusVO;
+
 /**
- * This is a scheduler task which helps in initializing the Monitoring of the service/server.
- * It extend TimerTask which creates a thread per object of this class.
- * Each thread has one-to-one correspondence to a service/server being monitored.
- * The application ensures that there is only one thread for a unique service/server.
+ * This is a scheduler task which helps in initializing the Monitoring of the
+ * service/server. It extend TimerTask which creates a thread per object of this
+ * class. Each thread has one-to-one correspondence to a service/server being
+ * monitored. The application ensures that there is only one thread for a unique
+ * service/server.
+ * 
  * @author Tushar
  * @version 1.0
  */
@@ -30,7 +33,7 @@ public class SchedulerTask extends TimerTask {
 
 	public SchedulerTask(long delay, String serviceURL) {
 		this.isSchedulerRunning = false;
-		this.delay = delay*ApplicationConstants.MILLISECONDS;
+		this.delay = delay * ApplicationConstants.MILLISECONDS;
 		this.serviceURL = serviceURL;
 	}
 
@@ -42,21 +45,22 @@ public class SchedulerTask extends TimerTask {
 		this.isSchedulerRunning = false;
 	}
 
+	@Override
 	public void run() {
-		this.isSchedulerRunning=true;
-		while(this.isSchedulerRunning) {
+		this.isSchedulerRunning = true;
+		while (this.isSchedulerRunning) {
 			ssDAO.insertServiceStatus(serviceURL, invokeService());
-			try { 
-				Thread.sleep(delay); 
-			} catch (Exception e) { 
+			try {
+				Thread.sleep(delay);
+			} catch (Exception e) {
 				break;
 			}
-		}      
+		}
 	}
 
 	/**
-	 * When invoked, this method calls the service which meant to be monitored by the thread and
-	 * return the response as ServiceStatusVO 
+	 * When invoked, this method calls the service which meant to be monitored by
+	 * the thread and return the response as ServiceStatusVO
 	 */
 	private ServiceStatusVO invokeService() {
 		String sStatus = ApplicationConstants.MONITORING_DOWN_MSG;
@@ -64,26 +68,25 @@ public class SchedulerTask extends TimerTask {
 		String sMessage = ApplicationConstants.EMPTY_STRING;
 		RestTemplate restTemplate = new RestTemplate();
 		try {
-			ServerResponse response = restTemplate.getForObject(serviceURL, ServerResponse.class );
-			if(ApplicationConstants.SERVICE_READY.equals(response.getStatus())) {
+			ServerResponse response = restTemplate.getForObject(serviceURL, ServerResponse.class);
+			if (ApplicationConstants.SERVICE_READY.equals(response.getStatus())) {
 				sStatus = ApplicationConstants.MONITORING_UP_MSG;
 				sCode = ApplicationMessages.HEALTHY_SERVER.getId();
 				sMessage = ApplicationMessages.HEALTHY_SERVER.getMsg();
 			}
-		}catch (HttpStatusCodeException exception) {
+		} catch (HttpStatusCodeException exception) {
 			sCode = exception.getStatusCode().value();
 			sMessage = exception.getMessage();
-		}catch (ResourceAccessException exception) {
+		} catch (ResourceAccessException exception) {
 			sCode = ApplicationMessages.INVALID_DNS.getId();
 			sMessage = ApplicationMessages.INVALID_DNS.getMsg();
-		}catch (Exception exception) {
+		} catch (Exception exception) {
 			sCode = ApplicationMessages.INTERNAL_SERVER_ERROR.getId();
 			sMessage = ApplicationMessages.INTERNAL_SERVER_ERROR.getMsg();
 		}
-		
-		return new ServiceStatusVO(
-				LocalDateTime.now(ZoneId.of(ApplicationConstants.TIME_ZONE)).toString(), 
-				sStatus, sCode, sMessage);
+
+		return new ServiceStatusVO(LocalDateTime.now(ZoneId.of(ApplicationConstants.TIME_ZONE)).toString(), sStatus,
+				sCode, sMessage);
 	}
 
 }

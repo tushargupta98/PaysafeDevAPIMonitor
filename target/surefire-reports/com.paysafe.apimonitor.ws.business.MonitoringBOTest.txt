@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.paysafe.apimonitor.ws.business.MonitoringBOTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.11 sec - in com.paysafe.apimonitor.ws.business.MonitoringBOTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 13.001 sec - in com.paysafe.apimonitor.ws.business.MonitoringBOTest

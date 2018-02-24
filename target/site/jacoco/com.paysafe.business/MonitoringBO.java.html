@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MonitoringBO.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">apimonitorapp</a> &gt; <a href="index.source.html" class="el_package">com.paysafe.business</a> &gt; <span class="el_source">MonitoringBO.java</span></div><h1>MonitoringBO.java</h1><pre class="source lang-java linenums">package com.paysafe.business;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.paysafe.apimonitor.ws.dao.ApplicationConstants;
+import com.paysafe.apimonitor.ws.dao.ApplicationMessages;
+import com.paysafe.apimonitor.ws.dao.ServiceMonitorDAO;
+import com.paysafe.apimonitor.ws.dao.ServiceStatusDAO;
+import com.paysafe.apimonitor.ws.model.ExecutionResponseVO;
+import com.paysafe.apimonitor.ws.model.SchedulerVO;
+import com.paysafe.apimonitor.ws.model.ServiceStatusVO;
+import com.paysafe.apimonitor.ws.model.StartRequestVO;
+
+/**
+ * This class instantiates the business processing for all the requests made by
+ * the exposed services.
+ * 
+ * @author Tushar
+ * @version 1.0
+ */
+public class MonitoringBO {
+	/**
+	 * this dynamically provides the type of persistence/data-management mechanism
+	 * should be used. Makes use of Factory Design pattern. this object provides
+	 * access to the list of all the services/servers monitored by the application
+	 * and their current states
+	 */
+<span class="fc" id="L30">	private ServiceMonitorDAO smDAO = MonitoringFactory.getServiceMonitorDAO(ApplicationConstants.SERVICE_MONITOR_DAO);</span>
+	/**
+	 * this dynamically provides the type of persistence/data-management mechanism
+	 * should be used. Makes use of Factory Design pattern. this object provides
+	 * access to all the status logged in for all the services/servers at a given
+	 * instance. The monitoring for a particular service may or may not have stopped
+	 * but it provides log since most recent monitoring-start
+	 */
+<span class="fc" id="L38">	private ServiceStatusDAO ssDAO = MonitoringFactory.getServiceStatusDAO(ApplicationConstants.SERVICE_STATUS_DAO);</span>
+
+<span class="fc" id="L40">	public MonitoringBO() {</span>
+
+<span class="fc" id="L42">	}</span>
+
+	/**
+	 * this method invokes the creation of a Monitor for a particular
+	 * service/server. it first validates the time interval, it should be minimum of
+	 * 1 second. it then checks if a monitor already exists for a particular
+	 * service/server. if exists and is currently monitoring then informs return the
+	 * status the the monitor already exists and does not create a new monitor,
+	 * otherwise it starts the monitoring of the service/server returns an
+	 * appropriate message in terms of ExecutionResponseVO object to the calling
+	 * function This method has been made synchronized because the process involves
+	 * creation of a monitoring thread per service/server
+	 * 
+	 * @author Tushar
+	 * @param srVO
+	 * @return ExecutionResponseVO
+	 */
+	public synchronized ExecutionResponseVO createServiceMonitor(StartRequestVO srVO) {
+
+<span class="fc" id="L61">		Map&lt;String, SchedulerVO&gt; serviceMonitorMap = smDAO.getAllServiceMonitors();</span>
+<span class="fc" id="L62">		ExecutionResponseVO erVO = new ExecutionResponseVO();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (srVO.getInterval() &lt; 1) {</span>
+<span class="fc" id="L64">			erVO.setCode(ApplicationMessages.INVALID_INTERVAL.getId());</span>
+<span class="fc" id="L65">			erVO.setMessage(ApplicationMessages.INVALID_INTERVAL.getMsg());</span>
+<span class="fc" id="L66">			return erVO;</span>
+		}
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		if (serviceMonitorMap.containsKey(srVO.getServiceURL())) {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (isServerMonitored(serviceMonitorMap.get(srVO.getServiceURL()))) {</span>
+<span class="fc" id="L70">				erVO.setCode(ApplicationMessages.ALREADY_MONITORING.getId());</span>
+<span class="fc" id="L71">				erVO.setMessage(ApplicationMessages.ALREADY_MONITORING.getMsg());</span>
+			} else {
+<span class="nc" id="L73">				startMonitoring(srVO, serviceMonitorMap);</span>
+<span class="nc" id="L74">				erVO.setCode(ApplicationMessages.MONITORING_STARTED.getId());</span>
+<span class="nc" id="L75">				erVO.setMessage(ApplicationMessages.MONITORING_STARTED.getMsg());</span>
+			}
+		} else {
+<span class="fc" id="L78">			startMonitoring(srVO, serviceMonitorMap);</span>
+<span class="fc" id="L79">			erVO.setCode(ApplicationMessages.MONITORING_STARTED.getId());</span>
+<span class="fc" id="L80">			erVO.setMessage(ApplicationMessages.MONITORING_STARTED.getMsg());</span>
+		}
+<span class="fc" id="L82">		return erVO;</span>
+	}
+
+	private void startMonitoring(StartRequestVO srVO, Map&lt;String, SchedulerVO&gt; serviceMonitorMap) {
+<span class="fc" id="L86">		SchedulerVO schVO = new SchedulerVO(srVO.getServiceURL(), srVO.getInterval());</span>
+<span class="fc" id="L87">		schVO.getTimer().schedule(schVO.getSchedulerTask(), 0);</span>
+<span class="fc" id="L88">		ssDAO.initializeServiceLog(srVO.getServiceURL());</span>
+<span class="fc" id="L89">		serviceMonitorMap.put(srVO.getServiceURL(), schVO);</span>
+<span class="fc" id="L90">	}</span>
+
+	/**
+	 * this method tries to stop the Monitor for a particular service/server. it
+	 * takes in the url of the service/server. it then checks if a monitor already
+	 * exists for a particular service/server. if exists and is currently monitoring
+	 * then it stop the corresponding monitoring thread if the monitor is already
+	 * stopped, it informs the calling function appropriately
+	 * 
+	 * @author Tushar
+	 * @param serviceURL
+	 * @return ExecutionResponseVO
+	 */
+	public ExecutionResponseVO stopMonitoring(String serviceURL) {
+<span class="fc" id="L104">		Map&lt;String, SchedulerVO&gt; serviceMonitorMap = smDAO.getAllServiceMonitors();</span>
+<span class="fc" id="L105">		ExecutionResponseVO erVO = new ExecutionResponseVO();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (serviceMonitorMap.containsKey(serviceURL)) {</span>
+<span class="fc" id="L107">			SchedulerVO sch = serviceMonitorMap.get(serviceURL);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (sch.getSchedulerTask().getSchedulerState()) {</span>
+<span class="fc" id="L109">				sch.getSchedulerTask().markSchedulerTaskToStop();</span>
+<span class="fc" id="L110">				sch.getSchedulerTask().cancel();</span>
+<span class="fc" id="L111">				sch.getTimer().cancel();</span>
+<span class="fc" id="L112">				sch.getTimer().purge();</span>
+<span class="fc" id="L113">				interruptThread(serviceURL);</span>
+<span class="fc" id="L114">				erVO.setCode(ApplicationMessages.MONITORING_STOPPED.getId());</span>
+<span class="fc" id="L115">				erVO.setMessage(ApplicationMessages.MONITORING_STOPPED.getMsg());</span>
+			} else {
+<span class="fc" id="L117">				erVO.setCode(ApplicationMessages.ALREADY_STOPPED.getId());</span>
+<span class="fc" id="L118">				erVO.setMessage(ApplicationMessages.ALREADY_STOPPED.getMsg());</span>
+			}
+<span class="fc" id="L120">		} else {</span>
+<span class="fc" id="L121">			erVO.setCode(ApplicationMessages.NO_MONITORING_HISTORY.getId());</span>
+<span class="fc" id="L122">			erVO.setMessage(ApplicationMessages.NO_MONITORING_HISTORY.getMsg());</span>
+		}
+<span class="fc" id="L124">		return erVO;</span>
+	}
+
+	/**
+	 * This method queries the status log of monitoring a particular server/service.
+	 * If there is no history/log for a service an empty collection is returned
+	 * 
+	 * @author Tushar
+	 * @version 1.0
+	 * @param serviceURL
+	 * @return List&lt;ServiceStatusVO&gt;
+	 */
+	public List&lt;ServiceStatusVO&gt; queryStatusLog(String serviceURL) {
+<span class="fc" id="L137">		List&lt;ServiceStatusVO&gt; statusLog = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L138">		Map&lt;String, List&lt;ServiceStatusVO&gt;&gt; serviceMonitorMap = ssDAO.getAllServiceStatusLogs();</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (serviceMonitorMap.containsKey(serviceURL)) {</span>
+<span class="fc" id="L140">			statusLog = serviceMonitorMap.get(serviceURL);</span>
+		}
+<span class="fc" id="L142">		return statusLog;</span>
+
+	}
+
+	private boolean isServerMonitored(SchedulerVO schVO) {
+<span class="fc" id="L147">		SchedulerTask rTask = schVO.getSchedulerTask();</span>
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">		if (rTask.getSchedulerState() &amp;&amp; isThreadRunning(schVO.getServiceName())) {</span>
+<span class="fc" id="L149">			return true;</span>
+		} else {
+<span class="nc" id="L151">			return false;</span>
+		}
+	}
+
+	private static boolean isThreadRunning(String serviceURL) {
+<span class="fc" id="L156">		boolean isthreadRunning = false;</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		for (Thread t : Thread.getAllStackTraces().keySet()) {</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			if (t.getName().equals(serviceURL)) {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				if (t.isAlive()) {</span>
+<span class="fc" id="L160">					isthreadRunning = true;</span>
+<span class="fc" id="L161">					break;</span>
+				} else {
+
+				}
+			}
+<span class="nc" id="L166">		}</span>
+<span class="fc" id="L167">		return isthreadRunning;</span>
+	}
+
+	private static void interruptThread(String serviceURL) {
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		for (Thread t : Thread.getAllStackTraces().keySet()) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			if (t.getName().equals(serviceURL)) {</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				if (t.isAlive()) {</span>
+<span class="fc" id="L174">					t.interrupt();</span>
+<span class="fc" id="L175">					break;</span>
+				} else {
+				}
+			}
+<span class="fc" id="L179">		}</span>
+<span class="fc" id="L180">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>
